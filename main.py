@@ -1,0 +1,102 @@
+import cv2
+import mediapipe as mp
+import time
+import controller as cnt
+ 
+
+time.sleep(2.0)
+
+mp_draw=mp.solutions.drawing_utils
+mp_hand=mp.solutions.hands
+
+
+tipIds=[4,8,12,16,20]
+
+video=cv2.VideoCapture(0)
+
+with mp_hand.Hands(min_detection_confidence=0.5,
+               min_tracking_confidence=0.5) as hands:
+    while True:
+        ret,image=video.read()
+        image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image.flags.writeable=False
+        results=hands.process(image)
+        image.flags.writeable=True
+        image=cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        lmList=[]
+        if results.multi_hand_landmarks:
+            for hand_landmark in results.multi_hand_landmarks:
+                myHands=results.multi_hand_landmarks[0]
+                for id, lm in enumerate(myHands.landmark):
+                    h,w,c=image.shape
+                    cx,cy= int(lm.x*w), int(lm.y*h)
+                    lmList.append([id,cx,cy])
+                thumb_tip_y = hand_landmark.landmark[mp_hand.HandLandmark.THUMB_TIP].y
+                index_tip_y = hand_landmark.landmark[mp_hand.HandLandmark.INDEX_FINGER_TIP].y
+                middle_tip_y = hand_landmark.landmark[mp_hand.HandLandmark.MIDDLE_FINGER_TIP].y
+                ring_tip_y = hand_landmark.landmark[mp_hand.HandLandmark.RING_FINGER_TIP].y
+                pinky_tip_y = hand_landmark.landmark[mp_hand.HandLandmark.PINKY_TIP].y
+                mp_draw.draw_landmarks(image, hand_landmark, mp_hand.HAND_CONNECTIONS)
+        fingers=[]
+        if len(lmList)!=0:
+            if lmList[tipIds[0]][1] > lmList[tipIds[0]-1][1]:
+                fingers.append(1)
+            else:
+                fingers.append(0)
+            for id in range(1,5):
+                if lmList[tipIds[id]][2] < lmList[tipIds[id]-2][2]:
+                    fingers.append(1)
+                else:
+                    fingers.append(0)
+            total=fingers.count(1)
+            # cnt.led(total)
+            if thumb_tip_y < index_tip_y and thumb_tip_y < middle_tip_y and thumb_tip_y < ring_tip_y and thumb_tip_y < pinky_tip_y:
+                if index_tip_y < middle_tip_y and index_tip_y < ring_tip_y and index_tip_y < pinky_tip_y:
+                    cv2.putText(image, "Punch", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cnt.led(6)
+            # elif total==0:
+            #     cnt.led(0)
+            elif total==1:
+                cv2.rectangle(image, (20, 300), (270, 425), (0, 255, 0), cv2.FILLED)
+                cv2.putText(image, "1", (45, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cv2.putText(image, "LED", (100, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cnt.led(1)
+            elif total==2:
+                cv2.rectangle(image, (20, 300), (270, 425), (0, 255, 0), cv2.FILLED)
+                cv2.putText(image, "2", (45, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cv2.putText(image, "LED", (100, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cnt.led(2)
+            elif total==3:
+                cv2.rectangle(image, (20, 300), (270, 425), (0, 255, 0), cv2.FILLED)
+                cv2.putText(image, "3", (45, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cv2.putText(image, "LED", (100, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cnt.led(3)
+            elif total==4:
+                cv2.rectangle(image, (20, 300), (270, 425), (0, 255, 0), cv2.FILLED)
+                cv2.putText(image, "4", (45, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cv2.putText(image, "LED", (100, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cnt.led(4)
+            elif total==5:
+                cv2.rectangle(image, (20, 300), (270, 425), (0, 255, 0), cv2.FILLED)
+                cv2.putText(image, "5", (45, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cv2.putText(image, "LED", (100, 375), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (255, 0, 0), 5)
+                cnt.led(5)
+            elif thumb_tip_y > index_tip_y:
+                  cv2.putText(image, "Thumb Down", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                  cnt.led(7)
+        cv2.imshow("Frame",image)
+        k=cv2.waitKey(1)
+        if k==ord('q'):
+            break
+video.release()
+cv2.destroyAllWindows()
